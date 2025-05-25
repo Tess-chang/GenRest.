@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}AI 餐廳推薦{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">AI 餐廳推薦</h2>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs" id="recommendTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="one-tab" data-bs-toggle="tab" data-bs-target="#one" type="button" role="tab">一餐推薦</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="multi-tab" data-bs-toggle="tab" data-bs-target="#multi" type="button" role="tab">多天推薦</button>
+  </li>
+</ul>
+
+<div class="tab-content mt-3" id="recommendTabsContent">
+  <!-- 單日推薦 -->
+  <div class="tab-pane fade show active" id="one" role="tabpanel" aria-labelledby="one-tab">
+    {% include "recommend.html" %}
+    {% if restaurant_list %}
+      <h5 class="mt-4">推薦結果（最多顯示 3 筆）</h5>
+      {% if restaurant_list[0].fallback %}
+        <div class="alert alert-warning">沒有符合您要求的餐廳，以下為鄰近地區推薦：</div>
+      {% endif %}
+      <div id="result-section" class="section-box">
+        {% for r in restaurant_list %}
+          <h5>{{ r.name_zh }}</h5>
+          {% if r.name_en %}
+            <p class="text-muted">{{ r.name_en }}</p>
+          {% endif %}
+          <p>{{ r.desc }}</p>
+          <p><strong>價位：</strong>{{ r.budget }}</p>
+          <p><strong>類別：</strong>{{ r.category }}</p>
+          <p><strong>評分：</strong>{{ r.rating }}</p>
+          <p><strong>狀態：</strong>{{ r.status }}</p>
+          <a target="_blank" href="https://www.google.com/maps?q={{ r.lat }},{{ r.lon }}" class="btn btn-outline-warning mt-2">查看地圖</a>
+          <button class="btn btn-outline-success mt-2"
+                  onclick="addToExpense('{{ r.name_zh }}', '{{ r.budget }}')">
+            💰 加入記帳
+          </button>
+
+          <hr>
+        {% endfor %}
+      </div>
+    {% elif error %}
+      <div id="result-section" class="section-box mt-4">
+        <h5>推薦結果</h5>
+        <div class="alert alert-danger">{{ error }}</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- 多天推薦 -->
+  <div class="tab-pane fade" id="multi" role="tabpanel" aria-labelledby="multi-tab">
+    {% include "recommend_multi.html" %}
+    {% if multi_schedule %}
+      <div id="multi-result-section" class="mt-4">
+        <h5>推薦結果</h5>
+        {% set total_days = [multi_schedule.get('breakfast', []) | length, multi_schedule.get('lunch', []) | length, multi_schedule.get('dinner', []) | length] | max %}
+        {% set meal_names = ["早餐", "午餐", "晚餐"] %}
+        {% for i in range(total_days) %}
+          {% set breakfast = multi_schedule.get('breakfast', [])[i] %}
+          {% set lunch = multi_schedule.get('lunch', [])[i] %}
+          {% set dinner = multi_schedule.get('dinner', [])[i] %}
+          <div class="row mb-4">
+            {% for meal, name in zip([breakfast, lunch, dinner], meal_names) %}
+              {% if meal and meal["name"] != "找不到" %}
+              <div class="col-md-4">
+                <div class="section-box">
+                  <h6 class="fw-bold">{{ meal.date }} {{ name }}</h6>
+                  <h5>{{ meal.name_zh }}</h5>
+                  {% if meal.name_en %}
+                    <p class="text-muted">{{ meal.name_en }}</p>
+                  {% endif %}
+                  <p>{{ meal.desc }}</p>
+                  <p>價位：{{ meal.budget }}</p>
+                  <p>類別：{{ meal.category }}</p>
+                  <p>評分：{{ meal.rating }}</p>
+                  <p>狀態：{{ meal.status }}</p>
+                  <a target="_blank" class="btn btn-sm btn-outline-warning" href="https://www.google.com/maps?q={{ meal.lat }},{{ meal.lon }}">查看地圖</a>
+                  <button class="btn btn-sm btn-outline-success mt-2"
+                          onclick="addToExpense('{{ meal.name_zh }}', '{{ meal.budget }}', '{{ meal.date }}')">
+                    💰 加入記帳
+                  </button>
+
+                </div>
+              </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 加到我的行事曆 -->
+<div class="text-end">
+  <button class="btn btn-primary mt-3" id="add-to-calendar">+ 加到我的餐廳行事曆</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const triggerTabs = document.querySelectorAll('#recommendTabs button');
+  triggerTabs.forEach(tab => {
+    tab.addEventListener('shown.bs.tab', (event) => {
+      setTimeout(() => {
+        if (event.target.id === "one-tab" && window.map) {
+          window.map.invalidateSize();
+        }
+      }, 200);
+    });
+  });
+
+  // 捲動至結果
+  window.addEventListener("DOMContentLoaded", () => {
+    const resultSection = document.getElementById("result-section");
+    const multiSection = document.getElementById("multi-result-section");
+
+    if (resultSection) {
+      const oneTab = document.getElementById("one-tab");
+      if (!oneTab.classList.contains("active")) oneTab.click();
+      setTimeout(() => resultSection.scrollIntoView({ behavior: "smooth" }), 400);
+    }
+
+    if (multiSection) {
+      const multiTab = document.getElementById("multi-tab");
+      if (!multiTab.classList.contains("active")) multiTab.click();
+      setTimeout(() => multiSection.scrollIntoView({ behavior: "smooth" }), 400);
+    }
+  });
+
+  // loading spinner
+  const form = document.querySelector('#one form');
+  if (form) {
+    form.addEventListener('submit', () => {
+      const btn = document.getElementById("submit-btn");
+      const text = document.getElementById("submit-text");
+      const spinner = document.getElementById("submit-spinner");
+      if (btn && spinner && text) {
+        btn.disabled = true;
+        spinner.style.display = "inline-block";
+        text.textContent = "推薦中…";
+      }
+    });
+  }
+
+  // 加入 localStorage
+  document.getElementById('add-to-calendar')?.addEventListener('click', () => {
+    {% if multi_schedule is defined %}
+    const schedule = {{ multi_schedule | tojson | safe }};
+    {% else %}
+    const schedule = {};
+    {% endif %}
+
+    const events = [];
+    for (const mealType in schedule) {
+      for (const item of schedule[mealType]) {
+        if (item && item.name !== "找不到") {
+          const mealName = mealType === 'breakfast' ? '早餐' :
+                           mealType === 'lunch' ? '午餐' : '晚餐';
+          events.push({
+            title: `${mealName} - ${item.name_zh}`,
+            start: item.date,
+            lat: item.lat,
+            lon: item.lon
+          });
+        }
+      }
+    }
+
+    const existing = JSON.parse(localStorage.getItem('calendarEvents') || '[]');
+    const merged = [...existing, ...events];
+    localStorage.setItem('calendarEvents', JSON.stringify(merged));
+    alert("✅ 已成功加入我的餐廳行事曆！");
+  });
+  function parseBudgetToNumber(budget) {
+    if (budget.includes('0~150')) return 100;
+    if (budget.includes('150~300')) return 225;
+    if (budget.includes('300~600')) return 450;
+    if (budget.includes('600')) return 700;
+    return 0;
+  }
+
+  function addToExpense(store, budget, date = null) {
+    const today = date || new Date().toISOString().split('T')[0];
+    const estimate = parseBudgetToNumber(budget);
+    const amount = prompt(`💰 記帳金額（可修改）：\n店家：${store}`, estimate);
+    if (amount === null || isNaN(amount) || amount <= 0) return;
+
+
+    const newRecord = {
+      date: today,
+      category: "餐飲",
+      amount: parseFloat(amount),
+      store: store
+    };
+
+    const records = JSON.parse(localStorage.getItem('expenses') || '[]');
+    records.push(newRecord);
+    localStorage.setItem('expenses', JSON.stringify(records));
+    alert("✅ 已加入記帳！");
+  }
+
+</script>
+{% endblock %}

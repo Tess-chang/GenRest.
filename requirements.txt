@@ -1,0 +1,11 @@
+Flask
+requests
+streamlit
+geopandas
+geopy
+osmnx
+shapely
+pandas     
+jinja2       
+gunicorn  
+

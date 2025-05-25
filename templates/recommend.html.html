@@ -1,0 +1,47 @@
+<h4 class="my-4">單日 AI 餐廳推薦</h4>
+
+<form method="POST" action="/recommend">
+  <div class="section-box">
+
+    <div class="mb-3">
+      <label class="form-label">你在哪裡呢？</label>
+      <select class="form-select" name="building" required>
+        <option value="">請選擇建築物</option>
+        {% for b in buildings %}
+          <option value="{{ b }}">{{ b }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">可接受的距離（公里）</label>
+      <input type="number" step="0.1" name="distance" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">你的預算</label>
+      <select class="form-select" name="budget">
+        <option value="$">$</option>
+        <option value="$$">$$</option>
+        <option value="$$$">$$$</option>
+        <option value="$$$$">$$$$</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">餐廳類別（可多選）</label>
+      <select class="form-select" name="category" multiple>
+        {% for c in categories %}
+          <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button id="submit-btn" type="submit" class="btn btn-primary">
+      <span id="submit-text">生成餐廳</span>
+      <span id="submit-spinner" class="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true" style="display: none;"></span>
+    </button>
+
+  </div>
+</form>
+

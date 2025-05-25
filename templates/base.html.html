@@ -1,0 +1,84 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}GenRest{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.min.js'></script>
+
+    <style>
+        body {
+        font-family: 'Noto Sans TC', sans-serif;
+        background-color: #fff;
+        padding: 30px;
+        }
+        .section-box {
+        border: 2px solid #234E70;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        background-color: #f8f9fa;
+        }
+        .form-select, .form-control {
+        background-color: #f4deba;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        }
+        .btn-outline-warning {
+        border-color: #d29c26;
+        color: #d29c26;
+        }
+        .btn-check:checked + .btn-outline-warning {
+        background-color: #d29c26;
+        color: white;
+        }
+        .navbar {
+        background-color: #ffffff;
+        border-bottom: 3px solid #234E70;
+        }
+        .navbar-brand {
+        font-weight: bold;
+        font-size: 1.8rem;
+        }
+        .nav-link {
+        font-size: 1.1rem;
+        }
+        .nav-tabs .nav-link.active {
+        border-color: transparent transparent #d29c26 transparent;
+        color: #234E70;
+        font-weight: bold;
+        }
+        .nav-tabs .nav-link {
+        border: none;
+        color: #383838;
+        }
+    </style>
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg px-4 mb-4">
+    <a class="navbar-brand" href="/">GenRest.</a>
+    <div class="collapse navbar-collapse">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="/">首頁</a></li>
+        <li class="nav-item"><a class="nav-link" href="/recommend">AI 餐廳推薦</a></li>
+        <li class="nav-item"><a class="nav-link" href="/calendar">我的餐廳行事曆</a></li>
+        <li class="nav-item"><a class="nav-link" href="/account">AI 記帳</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

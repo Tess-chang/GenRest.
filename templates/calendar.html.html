@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}我的餐廳行事曆{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">📅 我的餐廳行事曆</h2>
+
+  <div id="calendar"></div>
+
+  <button class="btn btn-outline-primary my-3" id="export-pdf">📄 匯出 PDF</button>
+
+  <!-- 匯出 PDF 用的隱藏區塊 -->
+  <div id="print-area" style="display: none;">
+    <h3>📅 我的餐廳行事曆</h3>
+    <ul id="event-list" style="padding-left: 20px;"></ul>
+  </div>
+
+  <div id="map" class="mt-4" style="height: 400px;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- 地圖樣式與腳本 -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- FullCalendar 樣式與腳本 -->
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+<!-- PDF 匯出工具 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const calendarEl = document.getElementById('calendar');
+
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    height: 'auto',
+    locale: 'zh-tw',
+    events: JSON.parse(localStorage.getItem('calendarEvents') || '[]'),
+
+    // 點日期新增
+    dateClick: function(info) {
+      const meal = prompt("請輸入餐別與店名，例如『午餐 - 八方雲集』");
+      if (meal) {
+        const newEvent = {
+          title: meal,
+          start: info.dateStr
+        };
+        calendar.addEvent(newEvent);
+
+        const events = calendar.getEvents().map(e => ({
+          title: e.title,
+          start: e.startStr,
+          lat: e.extendedProps.lat,
+          lon: e.extendedProps.lon
+        }));
+        localStorage.setItem('calendarEvents', JSON.stringify(events));
+      }
+    },
+
+    // 點事件刪除
+    eventClick: function(info) {
+      const confirmDelete = confirm(`是否要刪除「${info.event.title}」？`);
+      if (confirmDelete) {
+        info.event.remove();
+        const events = calendar.getEvents().map(e => ({
+          title: e.title,
+          start: e.startStr
+        }));
+        localStorage.setItem('calendarEvents', JSON.stringify(events));
+      }
+    }
+  });
+
+  calendar.render();
+
+  // 地圖初始化
+  const map = L.map('map').setView([25.0173, 121.5417], 15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
+
+  let marker = null;
+
+  calendar.on('eventClick', function(info) {
+    const lat = info.event.extendedProps.lat;
+    const lon = info.event.extendedProps.lon;
+    if (lat && lon) {
+      if (marker) marker.remove();
+      marker = L.marker([lat, lon]).addTo(map)
+        .bindPopup(`<strong>${info.event.title}</strong>`)
+        .openPopup();
+      map.setView([lat, lon], 17);
+    }
+  });
+
+  // 匯出 PDF
+  document.getElementById('export-pdf')?.addEventListener('click', () => {
+    const events = JSON.parse(localStorage.getItem('calendarEvents') || '[]');
+    if (events.length === 0) {
+      alert("⚠️ 沒有可匯出的行程！");
+      return;
+    }
+
+    const list = document.getElementById('event-list');
+    list.innerHTML = '';
+
+    events.forEach(e => {
+      const li = document.createElement('li');
+      li.textContent = `${e.start} - ${e.title}`;
+      list.appendChild(li);
+    });
+
+    const element = document.getElementById('print-area');
+    element.style.display = 'block';
+
+    setTimeout(() => {
+      html2pdf().from(element).save('我的餐廳行事曆.pdf').then(() => {
+        element.style.display = 'none';
+      });
+    }, 100);
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,238 @@
+
+  <h4 class="my-4">多天 AI 餐廳推薦</h4>
+
+
+  <!-- 餐別選擇 -->
+  <div class="mb-4">
+    <label class="form-label">請選擇你要安排的餐別：</label><br>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" id="breakfast_check" value="breakfast">
+      <label class="form-check-label" for="breakfast_check">早餐</label>
+    </div>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" id="lunch_check" value="lunch" checked>
+      <label class="form-check-label" for="lunch_check">午餐</label>
+    </div>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="checkbox" id="dinner_check" value="dinner" checked>
+      <label class="form-check-label" for="dinner_check">晚餐</label>
+    </div>
+  </div>
+
+  <!-- 日期區間 -->
+  <form method="POST" action="/generate_schedule">
+    <div class="row mb-4">
+      <div class="col">
+        <label class="form-label">起始日期</label>
+        <input type="date" name="start_date" id="start_date" class="form-control" required>
+      </div>
+      <div class="col">
+        <label class="form-label">結束日期</label>
+        <input type="date" name="end_date" id="end_date" class="form-control" required>
+      </div>
+    </div>
+
+    <!-- 容器：用 JS 產生每天欄位 -->
+    <div id="daily-forms"></div>
+
+      <button type="submit" class="btn btn-primary mt-4">產生推薦排程</button>
+  </form>
+</div>
+
+<script>
+  const buildings = [
+    "傅鐘",
+    "綜合教學館",
+    "總圖書館",
+    "湖心亭",
+    "綜合體育館",
+    "小福",
+    "農業陳列館",
+    "新月台",
+    "管理學院二號館",
+    "資訊工程館",
+    "社會科學院大樓",
+    "普通教學館",
+    "化學館",
+    "行政大樓",
+    "文學院",
+    "新生教學館",
+    "應力館",
+    "工綜館",
+    "博雅教學館",
+    "電機系館",
+    "思亮館",
+    "食品科技館",
+    "農化館",
+    "生農學院",
+    "植物科學研究中心",
+    "畜產館",
+    "森林館",
+    "農藝館",
+    "獸醫館",
+    "生物技術館",
+    "農業綜合館",
+    "園藝系溫室",
+    "植物教學館",
+    "昆蟲館",
+    "農業試驗館",
+    "獸醫臨床教學大樓",
+    "化工館",
+    "土木館",
+    "環工館",
+    "應力與材料館",
+    "生機系館",
+    "電資綜合大樓",
+    "電資大樓北棟",
+    "計算機及資訊網路中心",
+    "基礎實驗大樓",
+    "應用力學研究所",
+    "天文數學館",
+    "物理館",
+    "天文台",
+    "地質館",
+    "心理系館",
+    "生命科學館",
+    "教學大樓",
+    "綜合大樓",
+    "資訊系館",
+    "第二活動中心",
+    "一號館",
+    "總務處",
+    "文學院大樓",
+    "外語教學暨資源中心",
+    "外文系館",
+    "教學資源中心",
+    "外語學院",
+    "圖書資訊學系",
+    "新生教學館",
+    "普通教學館",
+    "舊總圖書館",
+    "醫學綜合大樓",
+    "護理學院",
+    "公衛學院",
+    "藥學院",
+    "生命科學院",
+    "獸醫學院",
+    "農業化學館",
+    "食品科技館",
+    "農場管理館",
+    "農業推廣館",
+    "植物病理館",
+    "昆蟲館新館",
+    "農機館",
+    "森林館",
+    "農業經濟館",
+    "農藝館",
+    "動物科學技術館",
+    "畜產館",
+    "畜產試驗場",
+    "農化館",
+    "植物科學館",
+    "作物科學館",
+    "水產養殖館",
+    "實驗林館",
+    "農藝試驗館",
+    "生物技術館",
+    "農業資源與環境學系",
+    "農業與自然資源學院",
+    "實驗農場教學大樓",
+    "景觀暨都市計劃系",
+    "土地管理館",
+    "實驗農場管理中心",
+    "生物資源暨農學院"
+  ];
+  const categories = [
+    { value: "ramen", label: "拉麵" },
+    { value: "cafe", label: "咖啡" },
+    { value: "bakery", label: "麵包店" },
+    { value: "dessert", label: "甜點" },
+    { value: "korean", label: "韓式" },
+    { value: "hotpot", label: "火鍋" },
+    { value: "bento", label: "便當" },
+    { value: "sushi", label: "壽司" },
+    { value: "chinese", label: "中式" },
+    { value: "western", label: "西式" },
+    { value: "fastfood", label: "速食" },
+    { value: "seafood", label: "海鮮" },
+    { value: "bbq", label: "燒烤" },
+    { value: "vegetarian", label: "素食" }
+  ];
+
+  function formatDate(date) {
+    return date.toISOString().split('T')[0];
+  }
+
+  function generateBuildingOptions() {
+    return buildings.map(b => `<option value="${b}">${b}</option>`).join('');
+  }
+
+  function generateCategoryOptions() {
+    return categories.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+  }
+
+
+  function buildFormSection(index, dateStr, meal) {
+    const prefix = `${meal}_${index}`;
+    const mealLabel = meal === 'lunch' ? '午餐' : meal === 'dinner' ? '晚餐' : '早餐';
+    return`
+    <div class="section-box">
+      <h5>${dateStr} - ${mealLabel}</h5>
+      <div class="mb-3">
+        <label class="form-label">建築物</label>
+        <select name="building_${prefix}" class="form-select" required>
+          <option value="">請選擇</option>
+          ${buildings.map(b => `<option value="${b}">${b}</option>`).join('')}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">距離（公里）</label>
+        <input type="number" name="distance_${prefix}" step="0.1" value="0.5" class="form-control" required>
+       </div>
+      <div class="mb-3">
+        <label class="form-label">預算</label>
+        <select name="budget_${prefix}" class="form-select">
+          <option value="$">$</option>
+          <option value="$$">$$</option>
+          <option value="$$$">$$$</option>
+          <option value="$$$$">$$$$</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">餐廳類別（可多選）</label>
+        <select name="category_${prefix}" multiple class="form-select">
+          ${categories.map(c => `<option value="${c.value}">${c.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+  `;
+}
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('end_date').addEventListener('change', () => {
+      const start = document.getElementById('start_date').value;
+      const end = document.getElementById('end_date').value;
+      const container = document.getElementById('daily-forms');
+      container.innerHTML = '';
+
+      const selectedMeals = [];
+      if (document.getElementById('breakfast_check').checked) selectedMeals.push('breakfast');
+      if (document.getElementById('lunch_check').checked) selectedMeals.push('lunch');
+      if (document.getElementById('dinner_check').checked) selectedMeals.push('dinner');
+
+      if (start && end && selectedMeals.length > 0) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        let index = 0;
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dateStr = formatDate(d);
+          selectedMeals.forEach(meal => {
+            container.innerHTML += buildFormSection(index, dateStr, meal);
+          });
+          index++;
+        }
+      }
+    });
+  });
+</script>
+

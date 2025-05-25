@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}AI 記帳{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">💰 AI 智能記帳</h2>
+
+  <!-- 預算設定 -->
+  <div class="row g-3 align-items-center mb-3">
+    <div class="col-auto">
+      <label for="budget" class="col-form-label">💼 每月預算：</label>
+    </div>
+    <div class="col-auto">
+      <input type="number" id="budget" class="form-control" placeholder="輸入金額" />
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-outline-secondary" id="save-budget">儲存</button>
+      <span id="budget-saved-msg" class="ms-2 text-success"></span>
+    </div>
+  </div>
+
+  <!-- 輸入表單 -->
+  <form id="expense-form" class="row g-3 mb-4">
+    <div class="col-md-3">
+      <input type="date" class="form-control" id="date" required>
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control" id="category" placeholder="類別（如：午餐）" required>
+    </div>
+    <div class="col-md-3">
+      <input type="number" class="form-control" id="amount" placeholder="金額" required>
+    </div>
+    <div class="col-md-3">
+      <input type="text" class="form-control" id="store" placeholder="店名（如：八方雲集）">
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary">➕ 新增支出</button>
+    </div>
+  </form>
+
+  <!-- 記帳清單 -->
+  <div id="expense-list" class="mb-4"></div>
+
+  <!-- 預算預測與建議 -->
+  <div class="alert alert-info" id="budget-summary" style="display:none;"></div>
+
+  <!-- 店家分析 -->
+  <div class="alert alert-warning" id="store-analysis" style="display:none;"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('expense-form');
+    const list = document.getElementById('expense-list');
+    const summary = document.getElementById('budget-summary');
+    const storeSummary = document.getElementById('store-analysis');
+    const budgetInput = document.getElementById('budget');
+    const budgetSavedMsg = document.getElementById('budget-saved-msg');
+
+    // 初始化預算欄位
+    budgetInput.value = localStorage.getItem('monthlyBudget') || '';
+
+    document.getElementById('save-budget')?.addEventListener('click', e => {
+      e.preventDefault();
+      localStorage.setItem('monthlyBudget', budgetInput.value);
+      budgetSavedMsg.textContent = '✅ 預算已儲存';
+      setTimeout(() => budgetSavedMsg.textContent = '', 1500);
+      loadExpenses();
+    });
+
+    const loadExpenses = () => {
+      const data = JSON.parse(localStorage.getItem('expenses') || '[]');
+      list.innerHTML = '';
+      let total = 0;
+
+      if (data.length === 0) {
+        list.innerHTML = '<p class="text-muted">尚無支出記錄</p>';
+        summary.style.display = 'none';
+        storeSummary.style.display = 'none';
+        return;
+      }
+
+      data.forEach((e, i) => {
+        total += parseFloat(e.amount);
+        const div = document.createElement('div');
+        div.className = 'alert alert-secondary d-flex justify-content-between align-items-center';
+        div.innerHTML = `
+          <span>${e.date}｜${e.category}：$${e.amount} ${e.store ? `｜店家：${e.store}` : ''}</span>
+          <button class="btn btn-sm btn-danger" onclick="deleteExpense(${i})">刪除</button>
+        `;
+        list.appendChild(div);
+      });
+
+      const uniqueDays = new Set(data.map(e => e.date)).size;
+      const avg = total / uniqueDays;
+      const monthlyBudget = parseFloat(localStorage.getItem('monthlyBudget')) || null;
+
+      let suggestion = avg > 300
+        ? '你可能花太多了，可以考慮減少非必要支出。'
+        : '花費控制良好，繼續保持！';
+
+      if (monthlyBudget) {
+        const percent = (total / monthlyBudget) * 100;
+        suggestion += `<br>📊 <strong>本月預算使用：</strong> 已用 <strong>${percent.toFixed(1)}%</strong>`;
+        if (percent > 100) suggestion += ' ⚠️ 已超出預算！';
+        else if (percent > 80) suggestion += ' 🟠 預算使用偏高，請留意！';
+      }
+
+      summary.style.display = 'block';
+      summary.innerHTML = `
+        💡 <strong>預算預測：</strong> 共 ${data.length} 筆支出，平均每日花費約 <strong>$${avg.toFixed(2)}</strong>。<br>
+        🧠 <strong>智慧建議：</strong> ${suggestion}
+      `;
+
+      // 店家統計分析
+      const storeDict = {};
+      data.forEach(e => {
+        if (e.store) {
+          storeDict[e.store] = (storeDict[e.store] || 0) + 1;
+        }
+      });
+
+      const topStores = Object.entries(storeDict)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([store, count]) => `「你這個月去了 ${count} 次 <strong>${store}</strong>」`);
+
+      if (topStores.length > 0) {
+        storeSummary.style.display = 'block';
+        storeSummary.innerHTML = `📊 <strong>店家/類別統計：</strong><br>${topStores.join('<br>')}<br>→ 下次可考慮避開常去店家，提升多樣性`;
+      } else {
+        storeSummary.style.display = 'none';
+      }
+    };
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const date = document.getElementById('date').value;
+      const category = document.getElementById('category').value;
+      const amount = document.getElementById('amount').value;
+      const store = document.getElementById('store').value.trim();
+
+      const record = { date, category, amount, store };
+      const data = JSON.parse(localStorage.getItem('expenses') || '[]');
+      data.push(record);
+      localStorage.setItem('expenses', JSON.stringify(data));
+      form.reset();
+      loadExpenses();
+    });
+
+    window.deleteExpense = (index) => {
+      const data = JSON.parse(localStorage.getItem('expenses') || '[]');
+      
+      data.splice(index, 1);
+      localStorage.setItem('expenses', JSON.stringify(data));
+      loadExpenses(); // 重新載入顯示
+    };
+
+    loadExpenses();
+  });
+</script>
+{% endblock %}
