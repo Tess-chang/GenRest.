@@ -4,13 +4,13 @@ import requests
 import random
 import json
 import re
+import os
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 app.jinja_env.globals.update(zip=zip)
 
-
-GOOGLE_API_KEY = "AIzaSyBbTwYoF3iRq1ZVC41_BNNTkf5qED06oik"
 
 BUILDING_COORDS = {
     "傅鐘": "25.0173,121.5417",
