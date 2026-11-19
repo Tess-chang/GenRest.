@@ -1,7 +1,7 @@
-# 🍽️ GenRest - AI 餐廳推薦系統
+# 🍽️ GenRest - 台大餐廳推薦系統
 網站:https://genrest.onrender.com
 
-**GenRest** 是一個基於 Flask 架構的 AI 餐廳推薦網站，整合 Google Places API 與台大建築座標資料，能根據使用者所在位置、用餐預算、餐飲偏好與時間需求，智慧推薦適合的餐廳。
+**GenRest** 是一個基於 Flask 架構的餐廳推薦網站，整合 Google Places API 與台大建築座標資料，能根據使用者所在位置、用餐預算、餐飲偏好與時間需求，智慧推薦適合的餐廳。
 
 ---
 
