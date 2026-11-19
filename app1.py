@@ -477,19 +477,6 @@ def account():
     return render_template("account.html")
 
 
-# 診斷用：確認金鑰與 Google API 是否正常。測完請刪除這段。
-@app.route("/debug_places")
-def debug_places():
-    info = {"has_key": bool(GOOGLE_API_KEY), "key_length": len(GOOGLE_API_KEY or "")}
-    try:
-        places = _search_text("restaurant", 25.0173, 121.5417, 500)
-        info["ok"] = True
-        info["count"] = len(places)
-        info["sample"] = [(p.get("displayName") or {}).get("text") for p in places[:3]]
-    except PlacesError as e:
-        info["ok"] = False
-        info["error"] = str(e)
-    return info
 
 
 if __name__ == "__main__":
